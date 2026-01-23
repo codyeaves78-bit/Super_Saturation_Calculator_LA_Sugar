@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Super Saturation Calculator</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f0f0;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1900px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+        }
+
+        h2 {
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+            margin-top: 30px;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        input[type="number"],
+        select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            /* Ensures padding doesn't affect width */
+            font-size: 16px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 0.9em;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: center;
+        }
+
+        th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        button {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 18px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin-top: 20px;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        .output-section {
+            padding: 20px;
+            background-color: #e9ecef;
+            border-radius: 4px;
+        }
+
+        .output-line {
+            margin: 10px 0;
+            font-size: 1.1em;
+        }
+
+        .status {
+            color: #28a745;
+            font-weight: bold;
+            margin-top: 15px;
+        }
+
+        canvas {
+            margin-top: 20px;
+            height: 500px;
+        }
+
+        .flex-container {
+            display: flex;
+            gap: 40px;
+            align-items: flex-start;
+        }
+
+        .flex-column {
+            flex: 1;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+
+    <div class="container">
+        <h1>Super Saturation Calculator</h1>
+
+        <div class="flex-container">
+            <div class="flex-column">
+                <h2>Inputs</h2>
+                <div class="input-group">
+                    <label for="ml_ap_pur">Mother liquor apparent purity (25 - 99.9)</label>
+                    <input type="number" id="ml_ap_pur" value="85.0" min="25.0" max="99.9" step="0.1">
+                </div>
+                <div class="input-group">
+                    <label for="ms_temp_f">Massecuite temperature °F (80 - 200)</label>
+                    <input type="number" id="ms_temp_f" value="150.0" min="80.0" max="200.0" step="0.1">
+                </div>
+                <div class="input-group">
+                    <label for="ss_targ">Super Saturation Target (1 - 2)</label>
+                    <input type="number" id="ss_targ" value="1.2" min="1.0" max="2.0" step="0.01">
+                </div>
+
+                <h2>Curve Coefficients Table</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Label</th>
+                            <th>Vavrinecz (v)</th>
+                            <th>Georgieva (g)</th>
+                            <th>Rozsa (r)</th>
+                            <th>Morales (m)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>m</td>
+                            <td>0.138</td>
+                            <td>0.100</td>
+                            <td>0.063</td>
+                            <td>-0.066</td>
+                        </tr>
+                        <tr>
+                            <td>b</td>
+                            <td>0.691</td>
+                            <td>0.400</td>
+                            <td>0.982</td>
+                            <td>0.996</td>
+                        </tr>
+                        <tr>
+                            <td>c</td>
+                            <td>0.000</td>
+                            <td>-0.240</td>
+                            <td>-2.100</td>
+                            <td>-2.099</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="input-group">
+                    <label for="curve_selector">Select Curve</label>
+                    <select id="curve_selector">
+                        <option value="Vavrinecz (v)">Vavrinecz (v)</option>
+                        <option value="Georgieva (g)">Georgieva (g)</option>
+                        <option value="Rozsa (r)" selected>Rozsa (r)</option>
+                        <option value="Morales (m)">Morales (m)</option>
+                    </select>
+                </div>
+
+                <button onclick="calculate()">Calculate</button>
+            </div>
+
+            <div class="output-section flex-column">
+                <h3>Outputs</h3>
+                <div class="output-line" id="out_brix">Mother Liquor Brix = --</div>
+                <div class="output-line" id="out_ss">Super Saturation = --</div>
+                <div class="output-line" id="out_time">Time to calculate: --</div>
+                <div class="status" id="status_text"></div>
+                <canvas id="saturationChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Coefficient Data
+        const coefData = {
+            'Vavrinecz (v)': [0.138, 0.691, 0.000],
+            'Georgieva (g)': [0.100, 0.400, -0.240],
+            'Rozsa (r)': [0.063, 0.982, -2.100],
+            'Morales (m)': [-0.066, 0.996, -2.099]
+        };
+        let chartInstance = null;
+
+        function calculate() {
+            // Get Inputs
+            const ml_ap_pur = parseFloat(document.getElementById('ml_ap_pur').value);
+            const ms_temp_f = parseFloat(document.getElementById('ms_temp_f').value);
+            const ss_targ = parseFloat(document.getElementById('ss_targ').value);
+            const curveName = document.getElementById('curve_selector').value;
+
+            const curve = coefData[curveName];
+
+            const startTime = performance.now();
+
+            // Logic Translation
+            const ml_true_pur = ml_ap_pur / (ml_ap_pur * 0.0019 + 0.8127); // true purity
+            const ms_temp_c = (ms_temp_f - 32) * 5 / 9;
+
+            // Brix saturation pure solution Vavrinecz 1962
+            const pur_sat_bx = 64.447
+                + 0.08222 * ms_temp_c
+                + 1.6169 * 1e-3 * Math.pow(ms_temp_c, 2)
+                - 1.558 * 1e-6 * Math.pow(ms_temp_c, 3)
+                - 4.63 * 1e-8 * Math.pow(ms_temp_c, 4);
+
+            const s_w_rat_sat = pur_sat_bx / (100 - pur_sat_bx); // sugar water ratio at saturation
+
+            // Iteration to find best brix (replicating numpy linspace and argmin)
+            let best_diff = Infinity;
+            let best_brix = 0;
+            const [m, b, c] = curve;
+
+            // Loop from 60 to 99 with 100,000 steps
+            const steps = 100000;
+            const start = 60;
+            const end = 99;
+            const stepSize = (end - start) / (steps - 1);
+            const plotData = [];
+
+            for (let i = 0; i < steps; i++) {
+                let bx_guess = start + (i * stepSize);
+
+                let ns_w = (bx_guess - bx_guess * ml_true_pur / 100) / (100 - bx_guess);
+                let s_w = bx_guess * ml_true_pur / 100 / (100 - bx_guess);
+
+                let c_nsw = c * ns_w;
+                let sc = m * ns_w + b + (1 - b) * Math.exp(c_nsw);
+
+                let ss_calc = s_w / (sc * s_w_rat_sat);
+                let ss_diff = Math.abs(ss_calc - ss_targ);
+
+                if (ss_diff < best_diff) {
+                    best_diff = ss_diff;
+                    best_brix = bx_guess;
+                }
+                // Collect data for graph (downsample for performance)
+                if (i % 50 === 0 && bx_guess >= 75 && bx_guess <= 95) {
+                    plotData.push({ x: bx_guess, y: ss_calc });
+                }
+            }
+
+            const endTime = performance.now();
+            const elapsed = (endTime - startTime) / 1000; // convert ms to seconds
+
+            // Update UI
+            document.getElementById('out_brix').innerText = `Mother Liquor Brix = ${best_brix.toFixed(2)}`;
+            document.getElementById('out_ss').innerText = `Super Saturation = ${ss_targ.toFixed(2)}`;
+            document.getElementById('out_time').innerText = `Time to calculate: ${elapsed.toFixed(5)} seconds`;
+            document.getElementById('status_text').innerText = "Calculation Successful";
+
+            // Plot Graph
+            const ctx = document.getElementById('saturationChart').getContext('2d');
+            if (chartInstance) {
+                chartInstance.destroy();
+            }
+
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    datasets: [{
+                        label: 'Super Saturation vs Brix',
+                        data: plotData,
+                        borderColor: 'rgb(75, 192, 192)',
+                        tension: 0.1,
+                        pointRadius: 0,
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: {
+                            type: 'linear',
+                            position: 'bottom',
+                            title: { display: true, text: 'Brix of Mother Liquor' },
+                            min: 75,
+                            max: 95,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        },
+                        y: {
+                            title: { display: true, text: 'Super Saturation' },
+                            min: 1,
+                            max: 1.5
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+
+</body>
+
+</html>
